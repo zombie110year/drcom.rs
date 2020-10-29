@@ -1,4 +1,8 @@
+#[macro_use]
+extern crate log;
+
 mod config;
+mod app;
 
 pub use config::{default_config, load_config};
 

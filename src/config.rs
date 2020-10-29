@@ -5,24 +5,24 @@ use std::path::Path;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct Config {
-    account: Account,
-    behavior: Behavior,
-    server: Server,
-    signal: Signal,
+    pub(crate) account: Account,
+    pub(crate) behavior: Behavior,
+    pub(crate) server: Server,
+    pub(crate) signal: Signal,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub(crate) struct Account {
-    username: String,
-    password: String,
+    pub(crate) username: String,
+    pub(crate) password: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct Behavior {
-    log_level: String,
-    log_file: String,
-    ror_version: bool,
-    max_retry: i64,
+    pub(crate) log_level: String,
+    pub(crate) log_file: String,
+    pub(crate) ror_version: bool,
+    pub(crate) max_retry: i64,
 }
 
 impl Default for Behavior {
@@ -38,13 +38,13 @@ impl Default for Behavior {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct Server {
-    dhcp_server: String,
-    host_ip: String,
-    host_name: String,
-    host_os: String,
-    mac: u64,
-    primary_dns: String,
-    server: String,
+    pub(crate) dhcp_server: String,
+    pub(crate) host_ip: String,
+    pub(crate) host_name: String,
+    pub(crate) host_os: String,
+    pub(crate) mac: u64,
+    pub(crate) primary_dns: String,
+    pub(crate) server: String,
 }
 
 impl Default for Server {
@@ -63,12 +63,11 @@ impl Default for Server {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct Signal {
-    adapter_num: [u8; 1],
-    auth_version: [u8; 2],
-    control_check_status: [u8; 1],
-    ip_dog: [u8; 1],
-    keep_alive_version: [u8; 2],
-    salt: Vec<u8>,
+    pub(crate) adapter_num: [u8; 1],
+    pub(crate) auth_version: [u8; 2],
+    pub(crate) control_check_status: [u8; 1],
+    pub(crate) ip_dog: [u8; 1],
+    pub(crate) keep_alive_version: [u8; 2],
 }
 
 impl Default for Signal {
@@ -79,7 +78,6 @@ impl Default for Signal {
             control_check_status: [0x20],
             ip_dog: [0x01], // 或者 0x07
             keep_alive_version: [0xdc, 0x02],
-            salt: Vec::new(),
         }
     }
 }
