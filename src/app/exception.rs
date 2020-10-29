@@ -6,6 +6,14 @@ pub enum DrcomException {
     StdIOError(std::io::Error),
     // challenge 失败
     ChallengeRemoteDenied,
+    // 帐号密码错误
+    AccountError,
+    // 帐号处于停机状态
+    AccountStopped,
+    // 帐号已欠费
+    AccountOutOfCost,
+    // 未知的登录错误
+    LoginError(Vec<u8>),
 }
 
 impl std::fmt::Display for DrcomException {

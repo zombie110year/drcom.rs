@@ -25,6 +25,8 @@ pub struct Drcom {
     conf: Config,
     pipe: UdpSocket,
     salt: [u8; 4],
+    // 登录凭据
+    token: [u8; 16],
 }
 
 impl Drcom {
@@ -35,6 +37,7 @@ impl Drcom {
             conf,
             pipe,
             salt: [0; 4],
+            token: [0; 16],
         })
     }
 }
@@ -79,6 +82,32 @@ impl Drcom {
             debug!("salt set(4) {:?}", &salt);
             self.salt.copy_from_slice(salt);
             return Ok(());
+        }
+    }
+
+    fn send_login(&mut self) -> Result<(), DrcomException> {
+        // todo build login packet
+        let ticket = [0_u8; 10];
+        let send_size = self.pipe.send(&ticket)?;
+        debug!("login sent({}) {:?}", send_size, &ticket);
+
+        let mut response: Vec<u8> = Vec::new();
+        let recv_size = self.pipe.recv(&mut response)?;
+        debug!("login recv({}) {:?}", recv_size, &response);
+
+        if response.starts_with(b"\x04") {
+            let token = &response[23..39];
+            self.token.copy_from_slice(&token);
+            debug!("token set(16) {:?}", &token);
+            return Ok(());
+        } else {
+            let header = &response[..5];
+            return match header {
+                b"\x05\x00\x00\x05\x03" => Err(DrcomException::AccountError),
+                b"\x05\x00\x00\x05\x04" => Err(DrcomException::AccountOutOfCost),
+                b"\x05\x00\x00\x05\x05" => Err(DrcomException::AccountStopped),
+                _ => Err(DrcomException::LoginError(header.to_vec())),
+            };
         }
     }
 }
