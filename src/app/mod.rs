@@ -90,7 +90,21 @@ impl Drcom {
 
     fn send_login(&mut self) -> Result<(), DrcomException> {
         // todo build login packet
-        let ticket = [0_u8; 10];
+        let ticket = make_login_ticket(
+            &self.conf.account.username,
+            &self.conf.account.password,
+            &self.salt,
+            self.conf.signal.control_check_status,
+            self.conf.signal.adapter_num,
+            self.conf.server.mac,
+            &self.conf.server.host_ip,
+            self.conf.signal.ip_dog,
+            &self.conf.server.host_name,
+            &self.conf.server.primary_dns,
+            &self.conf.server.dhcp_server,
+            &self.conf.server.host_os,
+            &self.conf.signal.auth_version,
+        );
         let send_size = self.pipe.send(&ticket)?;
         debug!("login sent({}) {:?}", send_size, &ticket);
 
