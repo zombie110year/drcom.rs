@@ -63,20 +63,20 @@ impl Default for Server {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct Signal {
-    pub(crate) adapter_num: [u8; 1],
+    pub(crate) adapter_num: u8,
     pub(crate) auth_version: [u8; 2],
-    pub(crate) control_check_status: [u8; 1],
-    pub(crate) ip_dog: [u8; 1],
+    pub(crate) control_check_status: u8,
+    pub(crate) ip_dog: u8,
     pub(crate) keep_alive_version: [u8; 2],
 }
 
 impl Default for Signal {
     fn default() -> Self {
         Self {
-            adapter_num: [0x07],
+            adapter_num: 0x07,
             auth_version: [0x0a, 0x00],
-            control_check_status: [0x20],
-            ip_dog: [0x01], // 或者 0x07
+            control_check_status: 0x20,
+            ip_dog: 0x01, // 或者 0x07
             keep_alive_version: [0xdc, 0x02],
         }
     }

@@ -1,4 +1,5 @@
 mod exception;
+mod login;
 
 use exception::*;
 
@@ -9,6 +10,8 @@ use rand::Rng;
 use crate::config::Config;
 use std::thread;
 use std::time::Duration;
+
+pub use login::LoginTicket;
 
 const DELAY: u64 = 5;
 
