@@ -50,7 +50,11 @@ impl Drcom {
         let mut counter = 0;
         let max_retry = self.conf.behavior.max_retry;
         let delay_base: u64 = 2;
-        while counter != max_retry {
+        loop {
+            if counter == max_retry {
+                error!("达到最大重试次数 {}，终止程序", counter);
+                std::process::exit(-1);
+            }
             if let Err(e) = self.chanllenge().and_then(|_| self.send_login()) {
                 counter += 1;
                 let wait = DELAY * delay_base.pow(counter as u32);
