@@ -24,8 +24,8 @@ pub fn make_login_ticket(
     let mut ticket = Vec::with_capacity(330);
 
     // 4, 4
-    let header = ((username.len() as u32 + 20) << 24) + 0x0103;
-    ticket.extend_from_slice(&header.to_le_bytes());
+    let header = 0x03010000 + (username.len() as u32 + 20);
+    ticket.extend_from_slice(&header.to_be_bytes());
 
     // 16, 20
     let mut buf = Md5::new();
