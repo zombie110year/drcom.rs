@@ -46,16 +46,44 @@ impl Drcom {
 }
 
 impl Drcom {
-    fn login(&mut self) {
+    pub fn login(&mut self) {
         let mut counter = 0;
         let max_retry = self.conf.behavior.max_retry;
         let delay_base: u64 = 2;
         while counter != max_retry {
-            // todo chanllenge
-            // todo sendlogin
-
-            counter += 1;
-            thread::sleep(Duration::from_secs(DELAY * delay_base.pow(counter as u32)));
+            if let Err(e) = self.chanllenge().and_then(|_| self.send_login()) {
+                counter += 1;
+                let wait = DELAY * delay_base.pow(counter as u32);
+                match e {
+                    DrcomException::AccountError => {
+                        error!("帐号密码错误，请重新设置账户");
+                        std::process::exit(-1);
+                    }
+                    DrcomException::AccountStopped => {
+                        error!("帐号处于停机状态，请至 user.cqu.edu.cn 启用");
+                        warn!("{} 秒后重试", wait);
+                    }
+                    DrcomException::AccountOutOfCost => {
+                        error!("帐号欠费，请缴费后重新连接");
+                        warn!("{} 秒后重试", wait);
+                    }
+                    DrcomException::StdIOError(ioe) => {
+                        error!("std::io::Error {:?}", ioe);
+                        warn!("{} 秒后重试", wait);
+                    }
+                    DrcomException::ChallengeRemoteDenied => {
+                        error!("challenge 失败");
+                        warn!("{} 秒后重试", wait);
+                    }
+                    DrcomException::LoginError => {
+                        error!("未知的登录错误");
+                        std::process::exit(-1);
+                    }
+                }
+                thread::sleep(Duration::from_secs(wait));
+            } else {
+                break;
+            }
         }
     }
 
@@ -123,7 +151,7 @@ impl Drcom {
                 b"\x05\x00\x00\x05\x03" => Err(DrcomException::AccountError),
                 b"\x05\x00\x00\x05\x04" => Err(DrcomException::AccountOutOfCost),
                 b"\x05\x00\x00\x05\x05" => Err(DrcomException::AccountStopped),
-                _ => Err(DrcomException::LoginError(header.to_vec())),
+                _ => Err(DrcomException::LoginError),
             };
         }
     }

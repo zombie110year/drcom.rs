@@ -13,7 +13,7 @@ pub enum DrcomException {
     // 帐号已欠费
     AccountOutOfCost,
     // 未知的登录错误
-    LoginError(Vec<u8>),
+    LoginError,
 }
 
 impl std::fmt::Display for DrcomException {
