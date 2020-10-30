@@ -3,8 +3,8 @@ use md5::{Digest, Md5};
 const MD5_LEN: usize = 16;
 const ACCOUNT_MAX_LEN: usize = 36;
 const MAC_LEN: usize = 6;
-const HOST_MAX_IP_NUM: usize = 4;
-const HOST_NAME_MAX_LEN: usize = 32;
+// const HOST_MAX_IP_NUM: usize = 4;
+// const HOST_NAME_MAX_LEN: usize = 32;
 
 pub fn make_login_ticket(
     username: &String,
@@ -24,23 +24,23 @@ pub fn make_login_ticket(
     let mut ticket = Vec::with_capacity(330);
 
     // 4, 4
-    let header = (username.len() as u32 + 20) << 24 + 0x0103;
+    let header = ((username.len() as u32 + 20) << 24) + 0x0103;
     ticket.extend_from_slice(&header.to_le_bytes());
 
     // 16, 20
-    let password_md5 = {
-        let mut password_md5 = Md5::new();
-        password_md5.update(b"\x03\x01");
-        password_md5.update(&salt);
-        password_md5.update(password.as_bytes());
-        password_md5.finalize().as_slice()
-    };
+    let mut buf = Md5::new();
+    buf.update(b"\x03\x01");
+    buf.update(&salt);
+    buf.update(password.as_bytes());
+    let md5sum = buf.finalize();
+    let password_md5 = md5sum.as_slice();
     ticket.extend_from_slice(password_md5);
 
     // 36, 56
     let account: [u8; ACCOUNT_MAX_LEN] = {
         let mut buf = [0; ACCOUNT_MAX_LEN];
-        buf.copy_from_slice(username.as_bytes());
+        let username = username.as_bytes();
+        buf[..username.len()].copy_from_slice(username);
         buf
     };
     ticket.extend_from_slice(&account);
@@ -53,21 +53,20 @@ pub fn make_login_ticket(
     // 6, 64
     let xor_n = {
         let mut xor_n = [0; 8];
-        xor_n[2..].copy_from_slice(&password_md5[..6]);
+        xor_n[2..].copy_from_slice(&password_md5[..MAC_LEN]);
         u64::from_be_bytes(xor_n)
     };
     let xored_mac = (xor_n ^ mac).to_be_bytes();
-    ticket.extend_from_slice(&xored_mac);
+    ticket.extend_from_slice(&xored_mac[..6]);
 
     // 16, 80
-    let password_md5_2 = {
-        let mut buf = Md5::new();
-        buf.update(b"\x01");
-        buf.update(password.as_bytes());
-        buf.update(&salt);
-        buf.update(&[0_u8; 4]);
-        buf.finalize().as_slice()
-    };
+    let mut buf = Md5::new();
+    buf.update(b"\x01");
+    buf.update(password.as_bytes());
+    buf.update(&salt);
+    buf.update(&[0_u8; 4]);
+    let md5sum = buf.finalize();
+    let password_md5_2 = md5sum.as_slice();
     ticket.extend_from_slice(&password_md5_2[..MD5_LEN]);
 
     // 1, 81
@@ -84,13 +83,12 @@ pub fn make_login_ticket(
     ticket.extend_from_slice(&[0; 12]);
 
     // 8, 105
-    let half_md5 = {
-        let mut buf = Md5::new();
-        let previous_data = &ticket[..97];
-        buf.update(previous_data);
-        buf.update(b"\x14\x00\x07\x0b");
-        &buf.finalize().as_slice()
-    };
+    let mut buf = Md5::new();
+    let previous_data = &ticket[..97];
+    buf.update(previous_data);
+    buf.update(b"\x14\x00\x07\x0b");
+    let md5sum = buf.finalize();
+    let half_md5 = md5sum.as_slice();
     ticket.extend_from_slice(&half_md5[..(MD5_LEN / 2)]);
 
     // 1, 106
@@ -101,7 +99,10 @@ pub fn make_login_ticket(
 
     // 32, 142
     let mut buf = [0; 32];
-    buf.copy_from_slice(host_name.as_bytes());
+    {
+        let host_name = host_name.as_bytes();
+        buf[..host_name.len()].copy_from_slice(host_name);
+    }
     ticket.extend_from_slice(&buf);
 
     // 4, 146
@@ -134,7 +135,10 @@ pub fn make_login_ticket(
 
     // 128, 310
     let mut service_pack = [0; 128];
-    service_pack.copy_from_slice(host_os.as_bytes());
+    {
+        let host_os = host_os.as_bytes();
+        service_pack[..host_os.len()].copy_from_slice(host_os);
+    }
     ticket.extend_from_slice(&service_pack);
 
     // 2, 312
@@ -147,9 +151,9 @@ pub fn make_login_ticket(
 
     // 4, 318
     let mut crc_buf = [0; 326];
-    crc_buf.copy_from_slice(&ticket[..314]);
+    crc_buf[..314].copy_from_slice(&ticket[..314]);
     crc_buf[314..320].copy_from_slice(b"\x01\x26\x07\x11\x00\x00");
-    crc_buf[320..].copy_from_slice(&mac.to_be_bytes()[..6]);
+    crc_buf[320..].copy_from_slice(&mac.to_be_bytes()[..MAC_LEN]);
     let checksum = crc_sum(&crc_buf);
     ticket.extend_from_slice(&checksum.to_le_bytes());
 
@@ -157,7 +161,7 @@ pub fn make_login_ticket(
     ticket.extend_from_slice(&[0; 2]);
 
     // 6, 326
-    ticket.extend_from_slice(&mac.to_le_bytes()[..6]);
+    ticket.extend_from_slice(&mac.to_le_bytes()[..MAC_LEN]);
 
     // 1+1+2=4, 330
     ticket.extend_from_slice(b"\x00\x00\xe9\x13");
@@ -169,10 +173,10 @@ pub(crate) fn crc_sum(buf: &[u8]) -> u32 {
     let chunks = buf.chunks(4);
     let mut sum = 1234;
     for chunk in chunks {
-        let c = [0; 4];
-        c.copy_from_slice(chunk);
+        let mut c = [0; 4];
+        c[..chunk.len()].copy_from_slice(chunk);
         let num = u32::from_le_bytes(c);
         sum ^= num;
     }
-    return sum * 1968;
+    return sum.wrapping_mul(1968);
 }

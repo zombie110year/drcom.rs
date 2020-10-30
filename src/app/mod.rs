@@ -11,7 +11,7 @@ use crate::config::Config;
 use std::thread;
 use std::time::Duration;
 
-pub use login::LoginTicket;
+pub use login::make_login_ticket;
 
 const DELAY: u64 = 5;
 
