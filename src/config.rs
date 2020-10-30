@@ -56,7 +56,7 @@ impl Default for Server {
             host_os: "Windows".into(),
             mac: 0x123456789012,
             primary_dns: "127.0.0.1".into(),
-            server: "gate.cqu.edu.cn".into(),
+            server: "gate.cqu.edu.cn:61440".into(),
         }
     }
 }
