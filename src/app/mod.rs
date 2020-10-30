@@ -84,12 +84,15 @@ impl Drcom {
                         error!("未知的登录错误");
                         std::process::exit(-1);
                     }
+                    // KeepAlive 错误不会在这出现
+                    _ => {}
                 }
                 thread::sleep(Duration::from_secs(wait));
             } else {
                 break;
             }
         }
+        info!("登录成功({})", &self.conf.account.username);
     }
 
     fn chanllenge(&mut self) -> Result<(), DrcomException> {
@@ -187,8 +190,7 @@ impl Drcom {
         let (srv_num, tail) = self.keep_alive_3(srv_num)?;
         let (srv_num, tail) = self.keep_alive_4(srv_num, tail)?;
 
-        // todo keep alive stable
-        Ok(())
+        self.keep_alive_stable(srv_num, tail)
     }
 
     fn keep_alive_1(&self) -> Result<(), DrcomException> {
@@ -274,6 +276,19 @@ impl Drcom {
         trace!("tail={:?}", &tail);
 
         return Ok((srv_num, tail));
+    }
+
+    fn keep_alive_stable(&self, srv_num: u8, tail: [u8; 4]) -> Result<(), DrcomException> {
+        let (mut srv_num, mut tail) = (srv_num, tail);
+        info!("开始稳定心跳");
+        loop {
+            let (a, b) = self.keep_alive_3(srv_num)?;
+            srv_num = a;
+            tail.copy_from_slice(&b);
+            let (a, b) = self.keep_alive_4(srv_num, tail)?;
+            srv_num = a;
+            tail.copy_from_slice(&b);
+        }
     }
 }
 
