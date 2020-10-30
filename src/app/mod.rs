@@ -50,15 +50,21 @@ impl Drcom {
     pub fn login(&mut self) {
         let mut counter = 0;
         let max_retry = self.conf.behavior.max_retry;
-        let delay_base: u64 = 2;
         loop {
             if counter == max_retry {
                 error!("达到最大重试次数 {}，终止程序", counter);
                 std::process::exit(-1);
             }
-            if let Err(e) = self.chanllenge().and_then(|_| self.send_login()) {
+            if let Err(e) = self
+                .chanllenge()
+                .and_then(|_| {
+                    thread::sleep(Duration::from_secs(20));
+                    Ok(())
+                })
+                .and_then(|_| self.send_login())
+            {
                 counter += 1;
-                let wait = DELAY * delay_base.pow(counter as u32);
+                let wait = DELAY * 2_u64.pow(counter as u32);
                 match e {
                     DrcomException::AccountError => {
                         error!("帐号密码错误，请重新设置账户");
@@ -185,10 +191,14 @@ impl Drcom {
             }
         }
 
+        thread::sleep(Duration::from_secs(20));
         let srv_num = 0;
         let srv_num = self.keep_alive_2(srv_num)?;
+        thread::sleep(Duration::from_secs(20));
         let (srv_num, tail) = self.keep_alive_3(srv_num)?;
+        thread::sleep(Duration::from_secs(20));
         let (srv_num, tail) = self.keep_alive_4(srv_num, tail)?;
+        thread::sleep(Duration::from_secs(20));
 
         self.keep_alive_stable(srv_num, tail)
     }
@@ -285,9 +295,12 @@ impl Drcom {
             let (a, b) = self.keep_alive_3(srv_num)?;
             srv_num = a;
             tail.copy_from_slice(&b);
+            thread::sleep(Duration::from_secs(20));
+
             let (a, b) = self.keep_alive_4(srv_num, tail)?;
             srv_num = a;
             tail.copy_from_slice(&b);
+            thread::sleep(Duration::from_secs(20));
         }
     }
 }
