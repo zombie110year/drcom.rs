@@ -14,6 +14,11 @@ pub enum DrcomException {
     AccountOutOfCost,
     // 未知的登录错误
     LoginError,
+    // keep_alive_1 出错
+    KeepAlive1,
+    KeepAlive2,
+    KeepAlive3,
+    KeepAlive4,
 }
 
 impl std::fmt::Display for DrcomException {

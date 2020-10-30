@@ -3,10 +3,8 @@ extern crate log;
 
 fn main() {
     env_logger::init();
-    info!("drcom start");
 
-    println!(
-        "{:#?}",
-        drcom::load_config("drcom.default.toml").unwrap()
-    );
+    let conf = drcom::load_config("drcom.dev.toml").unwrap();
+    let mut app = drcom::app::Drcom::new(conf).unwrap();
+    app.login();
 }

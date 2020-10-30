@@ -2,6 +2,7 @@ mod exception;
 mod login;
 
 use exception::*;
+use md5::{Digest, Md5};
 
 use std::net::UdpSocket;
 
@@ -159,4 +160,189 @@ impl Drcom {
             };
         }
     }
+
+    pub fn keep_alive(&mut self) -> Result<(), DrcomException> {
+        let max_retry = self.conf.behavior.max_retry;
+        let mut counter = 0;
+        loop {
+            if counter == max_retry {
+                error!("达到最大重试次数，终止程序");
+                std::process::exit(-1);
+            }
+            counter += 1;
+            let wait = DELAY * 2_u64.pow(counter as u32);
+            match self.keep_alive_1() {
+                Ok(()) => break,
+                Err(DrcomException::KeepAlive1) => {
+                    error!("keep_alive_1 error");
+                    thread::sleep(Duration::from_secs(wait));
+                    continue;
+                }
+                Err(o) => return Err(o),
+            }
+        }
+
+        let srv_num = 0;
+        let srv_num = self.keep_alive_2(srv_num)?;
+        let (srv_num, tail) = self.keep_alive_3(srv_num)?;
+        let (srv_num, tail) = self.keep_alive_4(srv_num, tail)?;
+
+        // todo keep alive stable
+        Ok(())
+    }
+
+    fn keep_alive_1(&self) -> Result<(), DrcomException> {
+        let pack = make_keep_alive_packet_1(&self.salt, &self.conf.account.password, &self.token);
+        let send_size = self.pipe.send(&pack)?;
+        debug!("keep_alive_1 sent ({}) {:?}", send_size, &pack);
+
+        let mut response = Vec::new();
+        let recv_size = self.pipe.recv(&mut response)?;
+        debug!("keep_alive_1 recv ({}) {:?}", recv_size, &response);
+
+        if !response.starts_with(b"\x07") {
+            Err(DrcomException::KeepAlive1)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn keep_alive_2(&self, srv_num: u8) -> Result<u8, DrcomException> {
+        let pack: Vec<u8> = make_keep_alive_packet_2(srv_num);
+
+        let send_size = self.pipe.send(&pack)?;
+        debug!("keep_alive_2 sent ({}) {:?}", send_size, &pack);
+
+        let mut response = Vec::new();
+        let recv_size = self.pipe.recv(&mut response)?;
+        debug!("keep_alive_2 recv ({}) {:?}", recv_size, &response);
+
+        if !response.starts_with(b"\x07") {
+            return Err(DrcomException::KeepAlive2);
+        }
+        let srv_num = srv_num + 1;
+        trace!("srv_num={}", srv_num);
+        return Ok(srv_num);
+    }
+
+    fn keep_alive_3(&self, srv_num: u8) -> Result<(u8, [u8; 4]), DrcomException> {
+        let pack: Vec<u8> = make_keep_alive_packet_3(srv_num, &self.conf.signal.keep_alive_version);
+
+        let send_size = self.pipe.send(&pack)?;
+        debug!("keep_alive_3 sent ({}) {:?}", send_size, &pack);
+
+        let mut response = Vec::new();
+        let recv_size = self.pipe.recv(&mut response)?;
+        debug!("keep_alive_3 recv ({}) {:?}", recv_size, &response);
+
+        if !response.starts_with(b"\x07") {
+            return Err(DrcomException::KeepAlive3);
+        }
+        let srv_num = srv_num + 1;
+        let mut tail = [0; 4];
+        tail.copy_from_slice(&response[16..20]);
+
+        trace!("srv_num={}", srv_num);
+        trace!("tail={:?}", &tail);
+
+        Ok((srv_num, tail))
+    }
+
+    fn keep_alive_4(&self, srv_num: u8, tail: [u8; 4]) -> Result<(u8, [u8; 4]), DrcomException> {
+        let pack: Vec<u8> = make_keep_alive_packet_4(
+            srv_num,
+            &tail,
+            &self.conf.server.host_ip,
+            &self.conf.signal.keep_alive_version,
+        );
+
+        let send_size = self.pipe.send(&pack)?;
+        debug!("keep_alive_4 sent ({}) {:?}", send_size, &pack);
+
+        let mut response = Vec::new();
+        let recv_size = self.pipe.recv(&mut response)?;
+        debug!("keep_alive_4 recv ({}) {:?}", recv_size, &response);
+
+        if !response.starts_with(b"\x07") {
+            return Err(DrcomException::KeepAlive4);
+        }
+
+        let srv_num = srv_num + 1;
+        let mut tail = [0; 4];
+        tail.copy_from_slice(&response[16..20]);
+        trace!("srv_num={}", srv_num);
+        trace!("tail={:?}", &tail);
+
+        return Ok((srv_num, tail));
+    }
+}
+
+fn make_keep_alive_packet_1(salt: &[u8; 4], password: &String, token: &[u8; 16]) -> Vec<u8> {
+    let mut packet = Vec::with_capacity(44);
+
+    let now: u16 = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("无法读取系统计时器")
+        .as_secs() as u16;
+
+    // 1, 1
+    packet.push(0xff);
+    // 16, 17
+    let mut buf = Md5::new();
+    buf.update(b"\x03\x01");
+    buf.update(&salt);
+    buf.update(password.as_bytes());
+    let md5sum = buf.finalize();
+    packet.extend_from_slice(&md5sum.as_slice());
+    // 3, 20
+    packet.extend_from_slice(&[0; 3]);
+    // 16, 36
+    packet.extend_from_slice(token);
+    // 4, 40
+    packet.extend_from_slice(&now.to_be_bytes());
+    // 4, 44
+    packet.extend_from_slice(&[0; 4]);
+
+    return packet;
+}
+
+fn make_keep_alive_packet_2(srv_num: u8) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(40);
+    buf.extend_from_slice(&[
+        0x07, srv_num, 0x28, 0x00, 0x0b, 0x01, 0x0f, 0x27, 0x2f, 0x12,
+    ]);
+    buf.extend_from_slice(&[0; 30]);
+    return buf;
+}
+
+fn make_keep_alive_packet_3(srv_num: u8, keep_alive_version: &[u8; 2]) -> Vec<u8> {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&[0x07, srv_num, 0x28, 0x00, 0x0b, 0x01]);
+    buf.extend_from_slice(keep_alive_version);
+    buf.extend_from_slice(&[0x2f, 0x12]);
+    buf.extend_from_slice(&[0; 30]);
+    return buf;
+}
+
+fn make_keep_alive_packet_4(
+    srv_num: u8,
+    tail: &[u8; 4],
+    host_ip: &String,
+    keep_alive_version: &[u8; 2],
+) -> Vec<u8> {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&[0x07, srv_num, 0x28, 0x00, 0x0b, 0x03]);
+    buf.extend_from_slice(keep_alive_version);
+    buf.extend_from_slice(&[0x2f, 0x12]);
+    buf.extend_from_slice(&[0; 6]);
+    buf.extend_from_slice(tail);
+    buf.extend_from_slice(&[0; 4]);
+    let host_ip: Vec<u8> = host_ip
+        .split(".")
+        .map(|pat| pat.parse::<u8>().unwrap())
+        .take(4)
+        .collect();
+    buf.extend_from_slice(&host_ip);
+    buf.extend_from_slice(&[0; 8]);
+    return buf;
 }
