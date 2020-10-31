@@ -1,4 +1,4 @@
-use drcom::app::make_login_ticket;
+use drcom::prelude::make_login_ticket;
 use std::fs::write;
 
 fn main() {

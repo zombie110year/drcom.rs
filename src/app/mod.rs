@@ -1,18 +1,16 @@
-mod exception;
-mod login;
-
-use exception::*;
-use md5::{Digest, Md5};
+pub(crate) mod exception;
+pub(crate) mod login;
 
 use std::net::UdpSocket;
+use std::time::Duration;
+use std::thread;
 
+use md5::{Digest, Md5};
 use rand::Rng;
 
+use self::exception::*;
+use self::login::make_login_ticket;
 use crate::config::Config;
-use std::thread;
-use std::time::Duration;
-
-pub use login::make_login_ticket;
 
 const DELAY: u64 = 5;
 
@@ -195,6 +193,7 @@ impl Drcom {
                 Ok(()) => break,
                 Err(DrcomException::KeepAlive1) => {
                     error!("keep_alive_1 error");
+                    warn!("{} 秒后重试", wait);
                     thread::sleep(Duration::from_secs(wait));
                     continue;
                 }

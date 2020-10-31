@@ -1,15 +1,6 @@
 #[macro_use]
 extern crate log;
 
-mod config;
-pub mod app;
-
-pub use config::{default_config, load_config};
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+pub(crate) mod app;
+pub(crate) mod config;
+pub mod prelude;

@@ -1,4 +1,4 @@
-use drcom::default_config;
+use drcom::prelude::default_config;
 use std::fs::write;
 
 fn main() {
