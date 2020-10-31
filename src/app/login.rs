@@ -57,7 +57,7 @@ pub fn make_login_ticket(
         u64::from_be_bytes(xor_n)
     };
     let xored_mac = (xor_n ^ mac).to_be_bytes();
-    ticket.extend_from_slice(&xored_mac[..6]);
+    ticket.extend_from_slice(&xored_mac[2..8]);
 
     // 16, 80
     let mut buf = Md5::new();
@@ -153,7 +153,7 @@ pub fn make_login_ticket(
     let mut crc_buf = [0; 326];
     crc_buf[..314].copy_from_slice(&ticket[..314]);
     crc_buf[314..320].copy_from_slice(b"\x01\x26\x07\x11\x00\x00");
-    crc_buf[320..].copy_from_slice(&mac.to_be_bytes()[..MAC_LEN]);
+    crc_buf[320..].copy_from_slice(&mac.to_be_bytes()[2..8]);
     let checksum = crc_sum(&crc_buf);
     ticket.extend_from_slice(&checksum.to_le_bytes());
 
@@ -161,7 +161,7 @@ pub fn make_login_ticket(
     ticket.extend_from_slice(&[0; 2]);
 
     // 6, 326
-    ticket.extend_from_slice(&mac.to_le_bytes()[..MAC_LEN]);
+    ticket.extend_from_slice(&mac.to_be_bytes()[2..8]);
 
     // 1+1+2=4, 330
     ticket.extend_from_slice(b"\x00\x00\xe9\x13");
