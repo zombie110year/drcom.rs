@@ -37,6 +37,7 @@ impl Drcom {
     pub fn new(conf: Config) -> Result<Self, DrcomException> {
         let pipe = find_available_udp();
         pipe.connect(&conf.server.server)?;
+        pipe.set_read_timeout(Some(Duration::from_secs(10)))?;
         Ok(Self {
             conf,
             pipe,
@@ -167,6 +168,18 @@ impl Drcom {
                 b"\x05\x00\x00\x05\x05" => Err(DrcomException::AccountStopped),
                 _ => Err(DrcomException::LoginError),
             };
+        }
+    }
+
+    pub fn empty_socket_buffer(&self) {
+        loop {
+            let mut buf = Vec::new();
+            if let Err(_) = self.pipe.recv(&mut buf) {
+                info!("套接字缓冲区已清空");
+                break;
+            } else {
+                info!("正在清空套接字缓冲区");
+            }
         }
     }
 
