@@ -113,15 +113,14 @@ impl Drcom {
             0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         &knock[2..=3].copy_from_slice(&(rd as u16).to_le_bytes()[..]);
-        let send_size = self.pipe.send(&knock)?;
+        let send_size = self.send(&knock)?;
         debug!("challenge sent({}) {:?}", send_size, &knock);
 
-        let mut response: Vec<u8> = Vec::with_capacity(1024);
-        let recv_size = self.pipe.recv(&mut response)?;
-        debug!("challenge recv({}) {:?}", recv_size, &response);
+        let response = self.recv()?;
+        debug!("challenge recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x02") {
-            warn!("challenge err({}) {:?}", recv_size, &response);
+            warn!("challenge err({}) {:?}", response.len(), &response);
             return Err(DrcomException::ChallengeRemoteDenied);
         } else {
             let salt = &response[4..8];
@@ -148,12 +147,11 @@ impl Drcom {
             &self.conf.server.host_os,
             &self.conf.signal.auth_version,
         );
-        let send_size = self.pipe.send(&ticket)?;
+        let send_size = self.send(&ticket)?;
         debug!("login sent({}) {:?}", send_size, &ticket);
 
-        let mut response: Vec<u8> = Vec::new();
-        let recv_size = self.pipe.recv(&mut response)?;
-        debug!("login recv({}) {:?}", recv_size, &response);
+        let response = self.recv()?;
+        debug!("login recv({}) {:?}", response.len(), &response);
 
         if response.starts_with(b"\x04") {
             let token = &response[23..39];
@@ -218,12 +216,11 @@ impl Drcom {
 
     fn keep_alive_1(&self) -> Result<(), DrcomException> {
         let pack = make_keep_alive_packet_1(&self.salt, &self.conf.account.password, &self.token);
-        let send_size = self.pipe.send(&pack)?;
+        let send_size = self.send(&pack)?;
         debug!("keep_alive_1 sent ({}) {:?}", send_size, &pack);
 
-        let mut response = Vec::new();
-        let recv_size = self.pipe.recv(&mut response)?;
-        debug!("keep_alive_1 recv ({}) {:?}", recv_size, &response);
+        let response = self.recv()?;
+        debug!("keep_alive_1 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             Err(DrcomException::KeepAlive1)
@@ -235,12 +232,11 @@ impl Drcom {
     fn keep_alive_2(&self, srv_num: u8) -> Result<u8, DrcomException> {
         let pack: Vec<u8> = make_keep_alive_packet_2(srv_num);
 
-        let send_size = self.pipe.send(&pack)?;
+        let send_size = self.send(&pack)?;
         debug!("keep_alive_2 sent ({}) {:?}", send_size, &pack);
 
-        let mut response = Vec::new();
-        let recv_size = self.pipe.recv(&mut response)?;
-        debug!("keep_alive_2 recv ({}) {:?}", recv_size, &response);
+        let response = self.recv()?;
+        debug!("keep_alive_2 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive2);
@@ -253,12 +249,11 @@ impl Drcom {
     fn keep_alive_3(&self, srv_num: u8) -> Result<(u8, [u8; 4]), DrcomException> {
         let pack: Vec<u8> = make_keep_alive_packet_3(srv_num, &self.conf.signal.keep_alive_version);
 
-        let send_size = self.pipe.send(&pack)?;
+        let send_size = self.send(&pack)?;
         debug!("keep_alive_3 sent ({}) {:?}", send_size, &pack);
 
-        let mut response = Vec::new();
-        let recv_size = self.pipe.recv(&mut response)?;
-        debug!("keep_alive_3 recv ({}) {:?}", recv_size, &response);
+        let response = self.recv()?;
+        debug!("keep_alive_3 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive3);
@@ -281,12 +276,11 @@ impl Drcom {
             &self.conf.signal.keep_alive_version,
         );
 
-        let send_size = self.pipe.send(&pack)?;
+        let send_size = self.send(&pack)?;
         debug!("keep_alive_4 sent ({}) {:?}", send_size, &pack);
 
-        let mut response = Vec::new();
-        let recv_size = self.pipe.recv(&mut response)?;
-        debug!("keep_alive_4 recv ({}) {:?}", recv_size, &response);
+        let response = self.recv()?;
+        debug!("keep_alive_4 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive4);
@@ -315,6 +309,19 @@ impl Drcom {
             tail.copy_from_slice(&b);
             thread::sleep(Duration::from_secs(20));
         }
+    }
+
+    fn send(&self, msg: &[u8]) -> Result<usize, DrcomException> {
+        let send_size = self.pipe.send(msg)?;
+        Ok(send_size)
+    }
+
+    fn recv(&self) -> Result<Vec<u8>, DrcomException> {
+        let mut recv_buf = [0u8; 1024];
+        let recv_size = self.pipe.recv(&mut recv_buf)?;
+        let mut msg = Vec::with_capacity(recv_size);
+        msg.extend_from_slice(&recv_buf[..recv_size]);
+        Ok(msg)
     }
 }
 
