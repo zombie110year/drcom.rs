@@ -1,23 +1,25 @@
 use drcom::app::make_login_ticket;
+use std::fs::write;
 
 fn main() {
     let d = make_login_ticket(
-        &String::from("HelloWorld"),
-        &String::from("HateDrcom"),
-        b"\x00\x00\x00\x00",
+        &String::from("20172744"),
+        &String::from("zxcvbnmasdf"),
+        b"/\xc3|\x00",
         0x20,
         7,
-        0x123456789012,
-        &String::from("192.168.1.1"),
+        0xEC4118D666AF,
+        &String::from("172.25.148.82"),
         1,
-        &String::from("DRCOM Client"),
+        &String::from("XiaoMi Router"),
         &String::from("8.8.8.8"),
         &String::from("0.0.0.0"),
-        &String::from("Windows 10"),
+        &String::from("Linux"),
         b"\x0a\x00",
     );
     println!("In bytes({})", d.len());
     hexdump(d.as_slice());
+    write("./rust.bin", d).unwrap();
 }
 
 fn hexdump(buf: &[u8]) {
