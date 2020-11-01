@@ -56,10 +56,6 @@ impl Drcom {
             }
             if let Err(e) = self
                 .chanllenge()
-                .and_then(|_| {
-                    thread::sleep(Duration::from_secs(20));
-                    Ok(())
-                })
                 .and_then(|_| self.send_login())
             {
                 counter += 1;
