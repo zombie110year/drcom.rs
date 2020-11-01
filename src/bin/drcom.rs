@@ -22,7 +22,10 @@ fn main() {
                 std::thread::sleep(Duration::new(20, 0));
                 continue;
             }
-            Err(e) => panic!("{:?}", e),
+            Err(e) => {
+                error!("其他错误 {:?}", e);
+                panic!("{:?}", e);
+            }
         }
     }
 }
