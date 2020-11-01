@@ -2,8 +2,8 @@ pub(crate) mod exception;
 pub(crate) mod login;
 
 use std::net::UdpSocket;
-use std::time::Duration;
 use std::thread;
+use std::time::Duration;
 
 use md5::{Digest, Md5};
 use rand::Rng;
@@ -54,10 +54,7 @@ impl Drcom {
                 error!("达到最大重试次数 {}，终止程序", counter);
                 std::process::exit(-1);
             }
-            if let Err(e) = self
-                .chanllenge()
-                .and_then(|_| self.send_login())
-            {
+            if let Err(e) = self.chanllenge().and_then(|_| self.send_login()) {
                 counter += 1;
                 let wait = DELAY * 2_u64.pow(counter as u32);
                 match e {
@@ -197,12 +194,9 @@ impl Drcom {
             }
         }
 
-        thread::sleep(Duration::from_secs(20));
         let srv_num = 0;
         let srv_num = self.keep_alive_2(srv_num)?;
-        thread::sleep(Duration::from_secs(20));
         let (srv_num, tail) = self.keep_alive_3(srv_num)?;
-        thread::sleep(Duration::from_secs(20));
         let (srv_num, tail) = self.keep_alive_4(srv_num, tail)?;
         thread::sleep(Duration::from_secs(20));
 
@@ -235,9 +229,13 @@ impl Drcom {
 
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive2);
+        } else if response.starts_with(b"\x07\x00\x28\x00")
+            || response.starts_with(&[0x07, srv_num, 0x28, 0x00])
+            || (&response[2] == &0x10u8)
+        {
+            let srv_num = srv_num + 1;
+            trace!("srv_num={}", srv_num);
         }
-        let srv_num = srv_num + 1;
-        trace!("srv_num={}", srv_num);
         return Ok(srv_num);
     }
 
@@ -297,7 +295,6 @@ impl Drcom {
             let (a, b) = self.keep_alive_3(srv_num)?;
             srv_num = a;
             tail.copy_from_slice(&b);
-            thread::sleep(Duration::from_secs(20));
 
             let (a, b) = self.keep_alive_4(srv_num, tail)?;
             srv_num = a;
@@ -379,7 +376,7 @@ fn make_keep_alive_packet_4(
     buf.extend_from_slice(&[0x2f, 0x12]);
     buf.extend_from_slice(&[0; 6]);
     buf.extend_from_slice(tail);
-    buf.extend_from_slice(&[0; 4]);
+    buf.extend_from_slice(&[0; 8]);
     let host_ip: Vec<u8> = host_ip
         .split(".")
         .map(|pat| pat.parse::<u8>().unwrap())
