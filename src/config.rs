@@ -6,7 +6,7 @@ use std::path::Path;
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct Config {
     pub(crate) account: Account,
-    pub(crate) behavior: Behavior,
+    pub behavior: Behavior,
     pub(crate) server: Server,
     pub(crate) signal: Signal,
 }
@@ -18,11 +18,11 @@ pub(crate) struct Account {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub(crate) struct Behavior {
-    pub(crate) log_level: String,
-    pub(crate) log_file: String,
-    pub(crate) ror_version: bool,
-    pub(crate) max_retry: i64,
+pub struct Behavior {
+    pub log_level: String,
+    pub log_file: String,
+    pub ror_version: bool,
+    pub max_retry: i64,
 }
 
 impl Default for Behavior {

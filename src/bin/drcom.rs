@@ -3,19 +3,29 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use drcom::prelude::{load_config, Drcom, DrcomException};
-use log::{error, info, warn};
+use log::{error, info, warn, LevelFilter};
 
 fn main() {
-    env_logger::init();
-
     let conf_path = args().nth(1);
     let conf_path = if conf_path.is_none() {
         find_config().expect("找不到可用的配置文件")
     } else {
         Path::new(conf_path.unwrap().as_str()).to_owned()
     };
+    let conf = load_config(&conf_path).unwrap();
+
+    env_logger::builder()
+        .filter_level(match conf.behavior.log_level.as_str() {
+            "trace" => LevelFilter::Trace,
+            "debug" => LevelFilter::Debug,
+            "info" => LevelFilter::Info,
+            "warn" => LevelFilter::Warn,
+            "error" => LevelFilter::Error,
+            _ => LevelFilter::Info,
+        })
+        .init();
+
     info!("使用配置文件 {:?}", conf_path);
-    let conf = load_config(conf_path).unwrap();
     let mut app = Drcom::new(conf).unwrap();
     loop {
         app.login();
