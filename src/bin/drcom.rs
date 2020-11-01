@@ -1,12 +1,21 @@
+use std::env::args;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use drcom::prelude::{load_config, Drcom, DrcomException};
-use log::{error, warn};
+use log::{error, info, warn};
 
 fn main() {
     env_logger::init();
 
-    let conf = load_config("drcom.dev.toml").unwrap();
+    let conf_path = args().nth(1);
+    let conf_path = if conf_path.is_none() {
+        find_config().expect("找不到可用的配置文件")
+    } else {
+        Path::new(conf_path.unwrap().as_str()).to_owned()
+    };
+    info!("使用配置文件 {:?}", conf_path);
+    let conf = load_config(conf_path).unwrap();
     let mut app = Drcom::new(conf).unwrap();
     loop {
         app.login();
@@ -29,4 +38,24 @@ fn main() {
             }
         }
     }
+}
+
+/// 寻找可用的配置文件，寻找顺序：
+/// 1. `./drcom.toml`
+/// 2. `$XDG_CONFIG_HOME/drcom/drcom.toml`
+/// 3. 如果都找不到则返回 None
+fn find_config() -> Option<PathBuf> {
+    let choice = [
+        Some(Path::new("drcom.toml").into()),
+        dirs::config_dir().and_then(|d| Some(d.join("drcom/").join("drcom.toml"))),
+    ];
+    for p in choice.iter() {
+        if let Some(p) = p {
+            if p.exists() {
+                return Some(p.to_owned());
+            }
+        }
+    }
+
+    None
 }
