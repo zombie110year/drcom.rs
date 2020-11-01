@@ -251,7 +251,7 @@ impl Drcom {
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive3);
         }
-        let srv_num = srv_num + 1;
+        let srv_num = (srv_num % 0x7f) + 1;
         let mut tail = [0; 4];
         tail.copy_from_slice(&response[16..20]);
 
@@ -279,7 +279,7 @@ impl Drcom {
             return Err(DrcomException::KeepAlive4);
         }
 
-        let srv_num = srv_num + 1;
+        let srv_num = (srv_num % 0x7f) + 1;
         let mut tail = [0; 4];
         tail.copy_from_slice(&response[16..20]);
         trace!("srv_num={}", srv_num);
