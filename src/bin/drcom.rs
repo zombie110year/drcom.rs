@@ -16,7 +16,8 @@ fn main() {
             Err(DrcomException::KeepAlive1)
             | Err(DrcomException::KeepAlive2)
             | Err(DrcomException::KeepAlive3)
-            | Err(DrcomException::KeepAlive4) => {
+            | Err(DrcomException::KeepAlive4)
+            | Err(DrcomException::StdIOError(_)) => {
                 error!("KeepAlive Stable Error");
                 warn!("20 秒后重启");
                 std::thread::sleep(Duration::new(20, 0));
