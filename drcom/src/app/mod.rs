@@ -80,7 +80,7 @@ impl Drcom {
                     }
                     DrcomException::LoginError => {
                         error!("未知的登录错误");
-                        std::process::exit(-1);
+                        warn!("{} 秒后重试", wait);
                     }
                     // KeepAlive 错误不会在这出现
                     _ => {}
