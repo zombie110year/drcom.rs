@@ -10,4 +10,6 @@ edition = "2018"
 log = "^0.4"
 env_logger = "^0.7"
 dirs = "^3.0"
+toml = "^0.5"
+clap = "^2.33"
 drcom = { path = "../drcom" }
