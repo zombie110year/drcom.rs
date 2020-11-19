@@ -85,6 +85,9 @@ impl Drcom {
                     // KeepAlive 错误不会在这出现
                     _ => {}
                 }
+                // 初始化状态
+                self.salt.copy_from_slice(&[0; 4]);
+                self.token.copy_from_slice(&[0; 16]);
                 thread::sleep(Duration::from_secs(wait));
             } else {
                 break;
