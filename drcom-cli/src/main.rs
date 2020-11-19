@@ -5,9 +5,14 @@ use drcom::prelude::{load_config, Drcom, DrcomException};
 use log::{error, info, warn, LevelFilter};
 
 use clap::{App, Arg, SubCommand};
+use clap::{crate_description, crate_authors, crate_name, crate_version};
 
 fn main() {
-    let argparser = App::new("drcom-cli").subcommands(vec![
+    let argparser = App::new(crate_name!())
+    .author(crate_authors!())
+    .version(crate_version!())
+    .about(crate_description!())
+    .subcommands(vec![
         SubCommand::with_name("run")
             .about("启动 Drcom 连接程序")
             .arg(

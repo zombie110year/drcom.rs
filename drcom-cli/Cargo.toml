@@ -3,6 +3,7 @@ name = "drcom-cli"
 version = "0.1.2"
 authors = ["zombie110year <zombie110year@outlook.com>"]
 edition = "2018"
+description = "在命令行中使用的 Drcom Application"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
