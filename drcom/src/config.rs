@@ -86,9 +86,8 @@ pub fn default_config() -> Config {
     Config::default()
 }
 
-/// read config from specified file
-pub fn load_config<P: AsRef<Path>>(fp: P) -> Result<Config, std::io::Error> {
-    let buf = fs::read_to_string(fp)?;
-    let conf = toml::from_str(buf.as_str())?;
+/// read config from TOML text
+pub fn load_config(text: &String) -> Result<Config, std::io::Error> {
+    let conf = toml::from_str(text.as_str())?;
     return Ok(conf);
 }

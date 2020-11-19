@@ -4,26 +4,26 @@ use std::time::Duration;
 use drcom::prelude::{load_config, Drcom, DrcomException};
 use log::{error, info, warn, LevelFilter};
 
+use clap::{crate_authors, crate_description, crate_name, crate_version};
 use clap::{App, Arg, SubCommand};
-use clap::{crate_description, crate_authors, crate_name, crate_version};
 
 fn main() {
     let argparser = App::new(crate_name!())
-    .author(crate_authors!())
-    .version(crate_version!())
-    .about(crate_description!())
-    .subcommands(vec![
-        SubCommand::with_name("run")
-            .about("启动 Drcom 连接程序")
-            .arg(
-                Arg::with_name("config")
-                    .long("config")
-                    .short("c")
-                    .takes_value(true)
-                    .help("指定要运行的配置文件"),
-            ),
-        SubCommand::with_name("default-toml").about("在当前目录下生成默认的 TOML 配置文件"),
-    ]);
+        .author(crate_authors!())
+        .version(crate_version!())
+        .about(crate_description!())
+        .subcommands(vec![
+            SubCommand::with_name("run")
+                .about("启动 Drcom 连接程序")
+                .arg(
+                    Arg::with_name("config")
+                        .long("config")
+                        .short("c")
+                        .takes_value(true)
+                        .help("指定要运行的配置文件"),
+                ),
+            SubCommand::with_name("default-toml").about("在当前目录下生成默认的 TOML 配置文件"),
+        ]);
     let args = argparser.get_matches();
     if let Some(m) = args.subcommand_matches("run") {
         drcom_run(m)
@@ -41,8 +41,11 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
         .and_then(|fp| Some(PathBuf::from(fp)))
         .or_else(find_config)
         .expect("找不到可用的配置文件");
-    let conf =
-        load_config(&conf_path).expect(format!("配置文件格式错误: {:?}", conf_path).as_str());
+    let conf = {
+        let buf = std::fs::read(&conf_path).unwrap();
+        let conf_text = String::from_utf8_lossy(&buf).to_string();
+        load_config(&conf_text).expect(format!("配置文件格式错误: {:?}", conf_text).as_str())
+    };
     env_logger::builder()
         .filter_level(match conf.behavior.log_level.as_str() {
             "trace" => LevelFilter::Trace,
