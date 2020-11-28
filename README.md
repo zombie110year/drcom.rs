@@ -53,7 +53,7 @@ mac = 20015998341138
 # Google 公共 DNS，也可以改成别的
 primary_dns = "8.8.8.8"
 # 重庆大学 DRCOM 验证服务器地址
-server = "gate.cqu.edu.cn:61440"
+server = "dr.com:61440"
 
 [signal]
 adapter_num = 7
