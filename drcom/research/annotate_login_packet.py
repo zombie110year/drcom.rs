@@ -1,23 +1,17 @@
-import binascii
-import json
-from io import SEEK_CUR, SEEK_END, SEEK_SET, StringIO
-from pathlib import Path
-from typing import *
+from io import StringIO
 
+def read_rust_vec(literal: str) -> bytes:
+    """将 log 中的列表转换为字节序列
 
-def read_rust() -> bytes:
-    txt = Path("rust.txt").read_text()
-    l = json.loads(txt)
-    return bytes(l)
+    >>> read_rust_vec("[1, 2, 3]")
+    b"\x01\x02\x03"
+    """
+    assert isinstance(literal, str)
+    assert literal.startswith("[") and literal.endswith("]")
+    vec = eval(literal)
+    data = bytes(vec)
+    return data
 
-def read_python() -> bytes:
-    txt = Path("python.txt").read_text()
-    b = binascii.unhexlify(txt)
-    return b
-
-def read_bytes(p: str) -> bytes:
-    with open(p, "rb") as io:
-        return io.read()
 
 def annotate_bytes(b: bytes) -> str:
     io = StringIO()
@@ -78,7 +72,7 @@ def hexdump(b: bytes) -> str:
     return io.read()
 
 if __name__ == "__main__":
-    with open("rust.parse.txt", "wt") as rust:
-        rust.write(annotate_bytes(read_bytes("rust.bin")))
-    with open("python.parse.txt", "wt") as python:
-        python.write(annotate_bytes(read_bytes("python.bin")))
+    vec = input()
+    data = read_rust_vec(vec)
+    hx = annotate_bytes(data)
+    print(hx)
