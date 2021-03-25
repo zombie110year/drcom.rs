@@ -125,7 +125,6 @@ impl Drcom {
     }
 
     fn send_login(&mut self) -> Result<(), DrcomException> {
-        // todo build login packet
         let ticket = make_login_ticket(
             &self.conf.account.username,
             &self.conf.account.password,
