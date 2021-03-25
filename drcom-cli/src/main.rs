@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use drcom::prelude::{load_config, Drcom, DrcomException};
-use log::{error, info, warn, LevelFilter};
+use log::{debug, error, info, warn};
 
 use clap::{crate_authors, crate_description, crate_name, crate_version};
 use clap::{App, Arg, SubCommand};
@@ -46,18 +46,10 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
         let conf_text = String::from_utf8_lossy(&buf).to_string();
         load_config(&conf_text).expect(format!("配置文件格式错误: {:?}", conf_text).as_str())
     };
-    env_logger::builder()
-        .filter_level(match conf.behavior.log_level.as_str() {
-            "trace" => LevelFilter::Trace,
-            "debug" => LevelFilter::Debug,
-            "info" => LevelFilter::Info,
-            "warn" => LevelFilter::Warn,
-            "error" => LevelFilter::Error,
-            _ => LevelFilter::Info,
-        })
-        .init();
+    env_logger::init();
 
     info!("使用配置文件 {:?}", conf_path);
+    debug!("配置文件 {:?}", &conf);
     let mut app = Drcom::new(conf).unwrap();
     loop {
         app.login();

@@ -108,17 +108,17 @@ impl Drcom {
         ];
         &knock[2..=3].copy_from_slice(&(rd as u16).to_le_bytes()[..]);
         let send_size = self.send(&knock)?;
-        debug!("challenge sent({}) {:?}", send_size, &knock);
+        trace!("challenge sent({}) {:?}", send_size, &knock);
 
         let response = self.recv()?;
-        debug!("challenge recv({}) {:?}", response.len(), &response);
+        trace!("challenge recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x02") {
             warn!("challenge err({}) {:?}", response.len(), &response);
             return Err(DrcomException::ChallengeRemoteDenied);
         } else {
             let salt = &response[4..8];
-            debug!("salt set(4) {:?}", &salt);
+            trace!("salt set(4) {:?}", &salt);
             self.salt.copy_from_slice(salt);
             return Ok(());
         }
@@ -141,15 +141,15 @@ impl Drcom {
             &self.conf.signal.auth_version,
         );
         let send_size = self.send(&ticket)?;
-        debug!("login sent({}) {:?}", send_size, &ticket);
+        trace!("login sent({}) {:?}", send_size, &ticket);
 
         let response = self.recv()?;
-        debug!("login recv({}) {:?}", response.len(), &response);
+        trace!("login recv({}) {:?}", response.len(), &response);
 
         if response.starts_with(b"\x04") {
             let token = &response[23..39];
             self.token.copy_from_slice(&token);
-            debug!("token set(16) {:?}", &token);
+            trace!("token set(16) {:?}", &token);
             return Ok(());
         } else {
             let header = &response[..5];
@@ -208,10 +208,10 @@ impl Drcom {
     fn keep_alive_1(&self) -> Result<(), DrcomException> {
         let pack = make_keep_alive_packet_1(&self.salt, &self.conf.account.password, &self.token);
         let send_size = self.send(&pack)?;
-        debug!("keep_alive_1 sent ({}) {:?}", send_size, &pack);
+        trace!("keep_alive_1 sent ({}) {:?}", send_size, &pack);
 
         let response = self.recv()?;
-        debug!("keep_alive_1 recv({}) {:?}", response.len(), &response);
+        trace!("keep_alive_1 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             Err(DrcomException::KeepAlive1)
@@ -224,10 +224,10 @@ impl Drcom {
         let pack: Vec<u8> = make_keep_alive_packet_2(srv_num);
 
         let send_size = self.send(&pack)?;
-        debug!("keep_alive_2 sent ({}) {:?}", send_size, &pack);
+        trace!("keep_alive_2 sent ({}) {:?}", send_size, &pack);
 
         let response = self.recv()?;
-        debug!("keep_alive_2 recv({}) {:?}", response.len(), &response);
+        trace!("keep_alive_2 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive2);
@@ -245,10 +245,10 @@ impl Drcom {
         let pack: Vec<u8> = make_keep_alive_packet_3(srv_num, &self.conf.signal.keep_alive_version);
 
         let send_size = self.send(&pack)?;
-        debug!("keep_alive_3 sent ({}) {:?}", send_size, &pack);
+        trace!("keep_alive_3 sent ({}) {:?}", send_size, &pack);
 
         let response = self.recv()?;
-        debug!("keep_alive_3 recv({}) {:?}", response.len(), &response);
+        trace!("keep_alive_3 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive3);
@@ -272,10 +272,10 @@ impl Drcom {
         );
 
         let send_size = self.send(&pack)?;
-        debug!("keep_alive_4 sent ({}) {:?}", send_size, &pack);
+        trace!("keep_alive_4 sent ({}) {:?}", send_size, &pack);
 
         let response = self.recv()?;
-        debug!("keep_alive_4 recv({}) {:?}", response.len(), &response);
+        trace!("keep_alive_4 recv({}) {:?}", response.len(), &response);
 
         if !response.starts_with(b"\x07") {
             return Err(DrcomException::KeepAlive4);
