@@ -4,26 +4,36 @@
 
 在 Release 界面下载预编译包：
 
-| 二进制包 | 适用平台 |
-|:-:|:-:|
-| `drcom` | x86_64-unknown-linux-gnu |
-| `drcom.exe` | x86_64-pc-windows-gnu |
-| `drcom-aarch64` | aarch64-unknown-linux-gnu |
+|      二进制包       |                 适用平台                 |
+| :-----------------: | :--------------------------------------: |
+|     `drcom-cli`     |        `x86_64-unknown-linux-gnu`        |
+|   `drcom-cli.exe`   |         `x86_64-pc-windows-gnu`          |
+| `drcom-cli.aarch64` | `aarch64-unknown-linux-gnu` ，如树莓派 4 |
 
 自行编译：
 
 ```sh
-cargo install drcom
+git clone https://github.com/zombie110year/drcom.rs.git
+cd drcom.rs
+cargo install drcom-cli --path ./drcom-cli
 ```
 
 # 使用方法
 
-运行 `drcom` 即可。
+由于 `pretty_env_logger` 使用环境变量 `RUST_LOG` 设置日志过滤等级，因此建议使用命令行：
+
+```sh
+# Linux
+RUST_LOG=trace drcom-cli run 2>&1 > /dev/null | tee -a drcom.log | grep -e 'INFO|WARN|ERROR'
+```
+
+这会将完全的日志输出至文件 `drcom.log`，但将 `INFO`, `WARN`, `ERROR` 等级的日志显示在终端。
 
 1. 默认载入配置文件 `./drcom.toml` 或 `$CONFIG_DIR/drcom/drcom.toml`
-	1. Windows: `%APPDATA%/drcom/drcom.toml`
-	2. Linux: `$XDG_CONFIG_HOME/drcom/drcom.toml`
-2. 手动指定配置文件：在命令行参数的第一项指定 `drcom example.toml`
+   1. Windows: `%APPDATA%/drcom/drcom.toml`
+   2. Linux: `$XDG_CONFIG_HOME/drcom/drcom.toml`
+2. 手动指定配置文件：`drcom-cli run -c example.toml`
+3. 生成默认配置文件：`drcom-cli default-toml`，会在当前工作目录下生成 `drcom.default.toml`，修改后保存至 `$CONFIG_DIR/drcom/drcom.toml` 以便自动载入
 
 # 配置文件模板
 
@@ -62,4 +72,3 @@ control_check_status = 32
 ip_dog = 1
 keep_alive_version = [220, 2]
 ```
-
