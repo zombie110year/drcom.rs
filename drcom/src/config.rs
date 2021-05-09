@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct Config {
     pub(crate) account: Account,
     pub behavior: Behavior,
@@ -9,13 +9,13 @@ pub struct Config {
     pub(crate) signal: Signal,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub(crate) struct Account {
     pub(crate) username: String,
     pub(crate) password: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Behavior {
     pub log_level: String,
     pub log_file: String,
@@ -34,7 +34,7 @@ impl Default for Behavior {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub(crate) struct Server {
     pub(crate) dhcp_server: String,
     pub(crate) host_ip: String,
@@ -59,7 +59,7 @@ impl Default for Server {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub(crate) struct Signal {
     pub(crate) adapter_num: u8,
     pub(crate) auth_version: [u8; 2],

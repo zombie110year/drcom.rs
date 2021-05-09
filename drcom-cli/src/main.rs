@@ -50,20 +50,25 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
 
     info!("使用配置文件 {:?}", conf_path);
     debug!("配置文件 {:?}", &conf);
-    let mut app = Drcom::new(conf).unwrap();
     loop {
+        // 每次重启时需要重新建立连接，而非仅重新登录
+        let mut app = Drcom::new(conf.clone()).unwrap();
         app.login();
         app.empty_socket_buffer();
         match app.keep_alive() {
             Ok(_) => break,
             Err(DrcomException::KeepAlive1)
             | Err(DrcomException::KeepAlive2)
-            | Err(DrcomException::KeepAlive3)
             | Err(DrcomException::KeepAlive4)
             | Err(DrcomException::StdIOError(_)) => {
                 error!("KeepAlive Stable Error");
                 warn!("20 秒后重启");
                 std::thread::sleep(Duration::new(20, 0));
+                continue;
+            }
+            // KeepAlive3 常因检测到多设备而中断，见 DEVLOG.md:#2021-05-09
+            Err(DrcomException::KeepAlive3) => {
+                error!("被检测到多设备，立刻重启！");
                 continue;
             }
             Err(e) => {
