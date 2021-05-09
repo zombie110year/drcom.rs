@@ -101,7 +101,7 @@ impl Drcom {
             .duration_since(std::time::UNIX_EPOCH)
             .expect("无法读取系统计时器")
             .as_secs();
-        let rd: u64 = now + rand::thread_rng().gen_range(0xf, 0xff);
+        let rd: u64 = now + rand::thread_rng().gen_range(0xf..=0xff);
         let mut knock: [u8; 20] = [
             0x01, 0x02, 0, 0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00,

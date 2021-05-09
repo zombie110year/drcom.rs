@@ -1,6 +1,6 @@
 [package]
 name = "drcom"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["zombie110year <zombie110year@outlook.com>"]
 edition = "2018"
 
@@ -10,5 +10,5 @@ edition = "2018"
 log = "0.4"
 toml = "^0.5"
 serde = { version = "^1.0", features = ["derive"] }
-rand = "^0.7"
+rand = "^0.8"
 md-5 = "^0.9.1"
