@@ -59,33 +59,19 @@ jobs:
         with:
           toolchain: stable
           target: aarch64-unknown-linux-gnu
-      - name: install cross compiling toolchain
-        run: |
-          [[ -e gcc-linaro-11.0.1-2021.03-x86_64_aarch64-linux-gnu.tar.xz.asc ]] && exit 0 || echo " linaro gcc doesn't exist, install"
-          curl -LO https://snapshots.linaro.org/gnu-toolchain/11.0-2021.03-1/aarch64-linux-gnu/gcc-linaro-11.0.1-2021.03-x86_64_aarch64-linux-gnu.tar.xz.asc
-          curl -LO https://snapshots.linaro.org/gnu-toolchain/11.0-2021.03-1/aarch64-linux-gnu/gcc-linaro-11.0.1-2021.03-x86_64_aarch64-linux-gnu.tar.xz
-          mkdir opt/
-          tar -xf gcc-linaro-11.0.1-2021.03-x86_64_aarch64-linux-gnu.tar.xz -C opt/
-      - name: cache installed cross compiling toolchain
-        uses: actions/cache@v2
-        with:
-          key: gcc-linaro-11.0.1-2021.03-x86_64_aarch64-linux-gnu
-          path: |
-            opt/
-            gcc-linaro-11.0.1-2021.03-x86_64_aarch64-linux-gnu.tar.xz.asc
+          override: true
       - name: cargo build
         uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: build
           args: --target aarch64-unknown-linux-gnu --release
-        env:
-          PATH: "$(pwd)/opt/gcc-linaro-11.0.1-2021.03-x86_64_aarch64-linux-gnu/bin:$PATH"
       - name: rename binary
-        run: mv target/release/drcom-cli{,.aarch64}
+        run: mv target/aarch64-unknown-linux-gnu/release/drcom-cli{,.aarch64}
       - name: release to github
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          files: target/release/drcom-cli.aarch64
+          files: target/aarch64-unknown-linux-gnu/release/drcom-cli.aarch64
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TK }}
