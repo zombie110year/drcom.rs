@@ -37,38 +37,78 @@ RUST_LOG=trace drcom-cli run 2>&1 > /dev/null | tee -a drcom.log | grep -e 'INFO
 
 # 配置文件模板
 
-默认的配置文件：
++ `behaviro.log_*` 目前使用环境变量 `RUST_LOG` 来配置日志，配置文件中的设置将被忽略。
++ `server.host_ip` 填写路由器或者上网设备的 IP。
++ `server.mac` 可以随机生成，也可以使用真实设备的 MAC 地址。
++ `server.primary_dns` 主要的 DNS 服务器，默认使用 Google 的公共 DNS。
++ `server.server` DRCOM 认证服务器的地址，`dr.com:61440` 是其所使用的域名，也可以填写 IP 地址；如果已知 IP，想知道域名，可以通过 `nslookup <ip>` 来查询。
+
+以下有一些配置文件模板，来自 [purefkh/CQU_drcom](https://github.com/purefkh/CQU_drcom/)。
+
+<details>
+<summary>
+虎溪校区（D 校区）的配置，主要修改 <code>[signal]</code> 下的部分。
+</summary>
 
 ```toml
 [account]
-# DRCOM 账户
 username = ""
 password = ""
 
 [behavior]
 log_level = "trace"
-# note 暂时无法指定日志文件，需要手动重定向
+log_file = "./drcom.log"
+ror_version = false
+max_retry = 1
+
+[server]
+dhcp_server = "0.0.0.0"
+host_ip = ""
+host_name = ""
+host_os = ""
+mac = 0
+primary_dns = "8.8.8.8"
+server = "dr.com:61440"
+
+[signal]
+adapter_num = 0x00
+auth_version = [0x2f, 0x00]
+control_check_status = 0x00
+ip_dog = 0x01
+keep_alive_version = [0xdc, 0x02]
+```
+</details>
+
+<details>
+<summary>
+沙坪坝校区（A, B 校区）的配置，主要修改 <code>[signal]</code> 下的部分。
+</summary>
+
+```toml
+[account]
+username = ""
+password = ""
+
+[behavior]
+log_level = "trace"
 log_file = "./drcom.log"
 ror_version = false
 max_retry = 10
 
 [server]
 dhcp_server = "0.0.0.0"
-# todo 路由器或者上网设备的 IP
 host_ip = ""
-host_name = "HOME"
-host_os = "Windows"
-# 随机生成，也可以用真实 MAC 地址
-mac = 20015998341138
-# Google 公共 DNS，也可以改成别的
+host_name = ""
+host_os = ""
+mac = 0
 primary_dns = "8.8.8.8"
-# 重庆大学 DRCOM 验证服务器地址
 server = "dr.com:61440"
 
 [signal]
-adapter_num = 7
-auth_version = [10, 0]
-control_check_status = 32
-ip_dog = 1
-keep_alive_version = [220, 2]
+adapter_num = 0x06
+auth_version = [0x25, 0x00]
+control_check_status = 0x20
+ip_dog = 0x01
+keep_alive_version = [0xd8, 0x02]
 ```
+</details>

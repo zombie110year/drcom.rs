@@ -1,6 +1,10 @@
 #! /usr/bin/python
 # python >= 3.6 < 4.0
 
+"""
+python dev-scripts/translate_log.py drcom.log drcom_.log
+"""
+
 import re
 from sys import argv
 from typing import List, Optional, Tuple
