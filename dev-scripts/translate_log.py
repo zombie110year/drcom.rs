@@ -23,8 +23,7 @@ def parse_log(
     """
     m = pat.match(line)
     if m is None:
-        print(line)
-        raise ValueError
+        raise ValueError(repr(line))
     mg = m.groupdict()
     return (mg['dt'], mg['lv'], mg['md'], mg['msg'], mg['bt'])
 
