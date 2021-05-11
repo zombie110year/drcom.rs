@@ -19,6 +19,8 @@ pub enum DrcomException {
     KeepAlive2,
     KeepAlive3,
     KeepAlive4,
+    // 未知的登出错误
+    LogoutError,
 }
 
 impl std::fmt::Display for DrcomException {

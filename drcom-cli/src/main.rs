@@ -79,14 +79,21 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
                     2
                 }
             };
-            // app.logout();
+            match app.logout() {
+                Ok(_) => (),
+                Err(DrcomException::LogoutError) => error!("未知的登出错误"),
+                Err(e) => error!("{:?}", e),
+            }
             drop(app);
             return exit_code;
         });
         let exit_code = worker.join().unwrap();
         match exit_code {
             0 => break,
-            1 => continue,
+            1 => {
+                thread::sleep(Duration::new(20, 0));
+                continue;
+            }
             2 => break,
             _ => panic!(),
         }

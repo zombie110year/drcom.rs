@@ -1,9 +1,9 @@
 pub(crate) mod exception;
 pub(crate) mod login;
 
-use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
+use std::net::UdpSocket;
 
 use md5::{Digest, Md5};
 use rand::Rng;
@@ -203,6 +203,57 @@ impl Drcom {
         thread::sleep(Duration::from_secs(20));
 
         self.keep_alive_stable(srv_num, tail)
+    }
+
+    pub fn logout(&mut self) -> Result<(), DrcomException> {
+        // def logout(usr, pwd, svr, mac, auth_info):
+        //     salt = challenge(svr, time.time()+random.randint(0xF, 0xFF))
+        //     if salt:
+        //         data = '\x06\x01\x00' + chr(len(usr) + 20)
+        //         data += md5sum('\x03\x01' + salt + pwd)
+        //         data += usr.ljust(36, '\x00')
+        //         data += CONTROLCHECKSTATUS
+        //         data += ADAPTERNUM
+        //         data += dump(int(data[4:10].encode('hex'),16)^mac).rjust(6, '\x00')
+        //         # data += '\x44\x72\x63\x6F' # Drco
+        //         data += auth_info
+        //         s.send(data)
+        //         data, address = s.recvfrom(1024)
+        //         if data[:1] == '\x04':
+        //             log('[logout_auth] logouted.')
+        self.chanllenge()?;
+        let mut packet: Vec<u8> = Vec::new();
+        packet.extend(b"\x06\x01\x00".iter());
+        let username_len = self.conf.account.username.len().to_be_bytes();
+        packet.push(username_len.iter().last().unwrap() + 20u8);
+        let mut md5sum = Md5::new();
+        md5sum.update(b"\x03\x01");
+        md5sum.update(&self.salt);
+        md5sum.update(self.conf.account.password.as_bytes());
+        packet.extend(md5sum.finalize());
+        let mut buffer = [0u8; 36];
+        &buffer[..self.conf.account.username.len()]
+            .copy_from_slice(self.conf.account.username.as_bytes());
+        packet.extend(&buffer);
+        packet.push(self.conf.signal.control_check_status);
+        packet.push(self.conf.signal.adapter_num);
+        let mut buffer = [0u8; 8];
+        &buffer[2..].copy_from_slice(&packet[4..10]);
+        let num = u64::from_be_bytes(buffer);
+        let num = num ^ self.conf.server.mac;
+        let buffer = num.to_be_bytes();
+        packet.extend(&buffer[2..]);
+        packet.extend(&self.token);
+        let size = self.send(&packet)?;
+        trace!("logout sent({}) {:?}", size, &packet);
+        let response = self.recv()?;
+        trace!("logout recv({}) {:?}", response.len(), &response);
+        if response.starts_with(b"\x04") {
+            info!("logout");
+            return Ok(());
+        } else {
+            return Err(DrcomException::LogoutError);
+        }
     }
 
     fn keep_alive_1(&self) -> Result<(), DrcomException> {
