@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::thread;
 use std::time::Duration;
 
 use drcom::prelude::{load_config, Drcom, DrcomException};
@@ -51,30 +52,43 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
     info!("使用配置文件 {:?}", conf_path);
     debug!("配置文件 {:?}", &conf);
     loop {
-        // 每次重启时需要重新建立连接，而非仅重新登录
-        let mut app = Drcom::new(conf.clone()).unwrap();
-        app.login();
-        app.empty_socket_buffer();
-        match app.keep_alive() {
-            Ok(_) => break,
-            Err(DrcomException::KeepAlive1)
-            | Err(DrcomException::KeepAlive2)
-            | Err(DrcomException::KeepAlive4)
-            | Err(DrcomException::StdIOError(_)) => {
-                error!("KeepAlive Stable Error");
-                warn!("20 秒后重启");
-                std::thread::sleep(Duration::new(20, 0));
-                continue;
-            }
-            // KeepAlive3 常因检测到多设备而中断，见 DEVLOG.md:#2021-05-09
-            Err(DrcomException::KeepAlive3) => {
-                error!("被检测到多设备，立刻重启！");
-                continue;
-            }
-            Err(e) => {
-                error!("其他错误 {:?}", e);
-                panic!("{:?}", e);
-            }
+        let conf = conf.clone();
+        let worker = thread::spawn(move || {
+            // 每次重启时需要重新建立连接，而非仅重新登录
+            let mut app = Drcom::new(conf.clone()).unwrap();
+            app.login();
+            app.empty_socket_buffer();
+            let exit_code = match app.keep_alive() {
+                Ok(_) => 0,
+                Err(DrcomException::KeepAlive1)
+                | Err(DrcomException::KeepAlive2)
+                | Err(DrcomException::KeepAlive4)
+                | Err(DrcomException::StdIOError(_)) => {
+                    error!("KeepAlive Stable Error");
+                    warn!("20 秒后重启");
+                    std::thread::sleep(Duration::new(20, 0));
+                    1
+                }
+                // KeepAlive3 常因检测到多设备而中断，见 DEVLOG.md:#2021-05-09
+                Err(DrcomException::KeepAlive3) => {
+                    error!("被检测到多设备，立刻重启！");
+                    1
+                }
+                Err(e) => {
+                    error!("其他错误 {:?}", e);
+                    2
+                }
+            };
+            // app.logout();
+            drop(app);
+            return exit_code;
+        });
+        let exit_code = worker.join().unwrap();
+        match exit_code {
+            0 => break,
+            1 => continue,
+            2 => break,
+            _ => panic!(),
         }
     }
 }
