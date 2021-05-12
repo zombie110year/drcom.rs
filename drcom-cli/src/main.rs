@@ -50,9 +50,9 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
     env_logger::init();
 
     info!("使用配置文件 {:?}", conf_path);
-    debug!("配置文件 {:?}", &conf);
     loop {
         let conf = conf.clone();
+        debug!("配置文件 {:?}", &conf);
         let worker = thread::spawn(move || {
             // 每次重启时需要重新建立连接，而非仅重新登录
             let mut app = Drcom::new(conf).unwrap();
