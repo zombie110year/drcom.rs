@@ -370,6 +370,12 @@ impl Drcom {
     }
 }
 
+impl Drop for Drcom {
+    fn drop(&mut self) {
+        info!("断开 UDP 连接");
+    }
+}
+
 fn make_keep_alive_packet_1(salt: &[u8; 4], password: &String, token: &[u8; 16]) -> Vec<u8> {
     let mut packet = Vec::with_capacity(44);
 

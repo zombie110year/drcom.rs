@@ -84,7 +84,6 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
                 Err(DrcomException::LogoutError) => error!("未知的登出错误"),
                 Err(e) => error!("{:?}", e),
             }
-            drop(app);
             return exit_code;
         });
         let exit_code = worker.join().unwrap();
