@@ -55,7 +55,7 @@ fn drcom_run(m: &clap::ArgMatches<'static>) {
         let conf = conf.clone();
         let worker = thread::spawn(move || {
             // 每次重启时需要重新建立连接，而非仅重新登录
-            let mut app = Drcom::new(conf.clone()).unwrap();
+            let mut app = Drcom::new(conf).unwrap();
             app.login();
             app.empty_socket_buffer();
             let exit_code = match app.keep_alive() {
